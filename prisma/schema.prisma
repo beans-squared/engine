@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DiscordChannel {
+  id                       String               @id
+  name                     String?
+  projects                 ProjectDestination[]
+  aiNotificationPrompt     String               @default("Create an announcement for an update to %PROJECT-NAME% on %PROJECT-PLATFORM%. The new version is %VERSION-NAME%, it's a %VERSION-RELEASE-TYPE% release, and the changelog is: %VERSION-CHANGELOG%. Use markdown formatting to highlight important information. Address it as being from %GUILD-NAME%")
+  defaultNotificationStyle String               @default("NORMAL")
+  maxChangelogLength       Int                  @default(4000)
+  textNotificationTemplate String               @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
+  discordGuild             DiscordGuild         @relation(fields: [discordGuildId], references: [id])
+  discordGuildId           String
+}
+
+model DiscordGuild {
+  id                       String           @id
+  name                     String?
+  aiNotificationPrompt     String           @default("Create an announcement for an update to %PROJECT-NAME% on %PROJECT-PLATFORM%. The new version is %VERSION-NAME%, it's a %VERSION-RELEASE-TYPE% release, and the changelog is: %VERSION-CHANGELOG%. Use markdown formatting to highlight important information. Address it as being from %GUILD-NAME%")
+  defaultNotificationStyle String           @default("NORMAL")
+  maxChangelogLength       Int              @default(4000)
+  maxProjects              Int              @default(1000)
+  textNotificationTemplate String           @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
+  DiscordChannel           DiscordChannel[]
+}
+
+model DiscordUser {
+  id                       String               @id
+  username                 String
+  projects                 ProjectDestination[]
+  aiNotificationPrompt     String               @default("Create an announcement for an update to %PROJECT-NAME% on %PROJECT-PLATFORM%. The new version is %VERSION-NAME%, it's a %VERSION-RELEASE-TYPE% release, and the changelog is: %VERSION-CHANGELOG%. Use markdown formatting to highlight important information. Address it as being from %GUILD-NAME%")
+  defaultNotificationStyle String               @default("NORMAL")
+  maxChangelogLength       Int                  @default(4000)
+  maxProjects              Int                  @default(1000)
+  textNotificationTemplate String               @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
+}
+
+model Email {
+  id       Int                  @id
+  email    String               @unique
+  verified Boolean              @default(false)
+  projects ProjectDestination[]
+  user     User                 @relation(fields: [userId], references: [id])
+  userId   Int
+}
+
+model Notification {
+  id                   Int                @id @default(autoincrement())
+  projectDestination   ProjectDestination @relation(fields: [projectDestinationId], references: [id])
+  projectDestinationId Int
+  datePosted           DateTime           @default(now())
+  success              Boolean
+  message              String?
+}
+
+model Project {
+  id       String
+  platform String
+  name     String
+  gameId   String
+  updated  DateTime
+  versions ProjectVersion[]
+
+  @@id([id, platform])
+}
+
+model ProjectDestination {
+  id               Int             @id
+  // "DISCORD_CHANNEL", "DISCORD_USER", "EMAIL", "WEBHOOK"
+  type             String
+  notifications    Notification[]
+  projectId        String
+  projectPlatform  String
+  discordChannel   DiscordChannel? @relation(fields: [discordChannelId], references: [id])
+  discordChannelId String?
+  discordUser      DiscordUser?    @relation(fields: [discordUserId], references: [id])
+  discordUserId    String?
+  email            Email?          @relation(fields: [emailId], references: [id])
+  emailId          Int?
+  webhook          Webhook?        @relation(fields: [webhookId], references: [id])
+  webhookId        Int?
+}
+
+model ProjectVersion {
+  versionId       String
+  projectId       String
+  projectPlatform String
+  datePublished   DateTime
+
+  Project Project @relation(fields: [projectId, projectPlatform], references: [id, platform])
+
+  @@id([versionId, projectId, projectPlatform])
+}
+
+model User {
+  id    Int     @id
+  Email Email[]
+}
+
+model Webhook {
+  id                 Int                  @id @default(autoincrement())
+  payloadUrl         String
+  ProjectDestination ProjectDestination[]
+}
