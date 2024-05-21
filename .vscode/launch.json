@@ -1,0 +1,13 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Start Bot",
+			"command": "npx ts-node-esm index.ts",
+			"type": "node-terminal",
+			"request": "launch",
+			"skipFiles": ["<node_internals>/**"],
+			"outputCapture": "console"
+		}
+	]
+}

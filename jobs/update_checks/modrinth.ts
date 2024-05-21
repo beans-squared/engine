@@ -1,7 +1,7 @@
-import { database } from '../../database'
-import { modrinth } from '../../external_api/modrinth'
-import { notify } from '../notifiers/notifier'
-import logger from '../logger'
+import { database } from '../../database.js'
+import { modrinth } from '../../external_api/modrinth.js'
+import { notify } from '../notifiers/notifier.js'
+import { logger } from '../../logger.js'
 import 'dotenv/config'
 
 const MAX_BATCH_CALL_SIZE = 1900
