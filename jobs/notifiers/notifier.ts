@@ -31,7 +31,6 @@ export const notify = async (notifierProjects: NotifierProject[] = []) => {
 			})
 
 			destinations.push({
-				type: 'channel',
 				channelId: discordChannelProject.discordChannelId,
 				guildId: discordChannelProject.discordChannel.discordGuildId,
 				notificationId: notification.id,
@@ -60,7 +59,6 @@ export const notify = async (notifierProjects: NotifierProject[] = []) => {
 			})
 
 			destinations.push({
-				type: 'channel',
 				userId: discordUserProject.discordUserId,
 				notificationId: notification.id,
 			})
