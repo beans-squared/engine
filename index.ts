@@ -1,15 +1,18 @@
 import express from 'express'
 import meta from './package.json' assert { type: 'json' }
 import heartbeat from './jobs/heartbeat.js'
-import { router } from './routes.js'
 import { logger } from './logger.js'
 import 'dotenv/config.js'
+
+import { discordChannelRoute } from './routes/discordChannel.js'
+import { discordGuildRoute } from './routes/discordGuild.js'
 
 const app = express()
 app.use(express.json())
 
 // Routes
-app.use(router)
+app.use(discordChannelRoute)
+app.use(discordGuildRoute)
 
 app.use('/', (request, response) => {
 	return response.send({
