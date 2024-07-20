@@ -5,8 +5,8 @@ import { logger } from '../logger.js'
 export const discordChannelRoute = express.Router()
 
 discordChannelRoute.route('/discord_channel').delete(async (request, response) => {
-	try {
-		const deleted = await database.discordChannel.delete({
+	const deleted = await database.discordChannel
+		.delete({
 			where: {
 				id: request.body.id,
 			},
@@ -14,13 +14,12 @@ discordChannelRoute.route('/discord_channel').delete(async (request, response) =
 				projects: true,
 			},
 		})
+		.catch((error) => logger.error(`Error while attempting to delete discord channel:\n${error}`))
 
+	if (deleted) {
 		logger.debug(`Deleted discord channel ${deleted.name} (${deleted.id}) and all associated tracked projects`)
-
 		return response.status(201).end()
-	} catch (error) {
-		logger.error('Error while attempting to delete discord channel', error)
+	} else {
+		return response.status(404).end()
 	}
-
-	return response.status(500).end()
 })

@@ -2,11 +2,12 @@ import { database } from '../../database.js'
 import { curseforge } from '../../external_api/curseforge.js'
 import { notify } from '../notifiers/notifier.js'
 import { logger } from '../../logger.js'
+import { CronJob } from 'cron'
 import 'dotenv/config'
 
 const MAX_BATCH_CALL_SIZE = 1000
 
-export const curseforgeUpdateCheck = async () => {
+export default new CronJob('0 * * * * *', async () => {
 	logger.debug('Checking CurseForge projects for updates...')
 
 	const projects = await database.project.findMany({
@@ -80,19 +81,23 @@ export const curseforgeUpdateCheck = async () => {
 					// success! project has an update
 
 					const changelog = await curseforge.endpoints.getModFileChangelog(project.id, latestFile.id.toString())
+					let changelogContent = ''
+					if (changelog) changelogContent = changelog.data
 
 					// Add new version data to the project in the database
 					const databaseProject = await database.project.update({
 						where: {
-							id: project.id,
-							platform: project.platform,
+							id_platform: {
+								id: project.id,
+								platform: project.platform,
+							},
 						},
 						data: {
 							name: data.name,
 							dateUpdated: data.dateReleased,
 							versions: {
 								create: {
-									id: latestFile.id,
+									id: `${latestFile.id}`,
 									datePublished: latestFile.fileDate,
 								},
 							},
@@ -109,20 +114,22 @@ export const curseforgeUpdateCheck = async () => {
 							platform: project.platform,
 						},
 						version: {
-							id: latestFile.id,
+							id: `${latestFile.id}`,
 							name: latestFile.displayName,
 							number: latestFile.fileName,
-							type: latestFile.releaseType,
+							type: releaseTypeToString(latestFile.releaseType),
 							date: latestFile.fileDate,
-							changelog: changelog,
+							changelog: formatHtmlChangelog(changelogContent),
 						},
 					})
 				}
 			} else {
 				await database.project.update({
 					where: {
-						id: project.id,
-						platform: project.platform,
+						id_platform: {
+							id: project.id,
+							platform: project.platform,
+						},
 					},
 					data: {
 						name: data.name,
@@ -134,7 +141,7 @@ export const curseforgeUpdateCheck = async () => {
 	}
 	// Send all updated project data off to the notifier
 	notify(notifierData)
-}
+})
 
 function formatHtmlChangelog(changelog: string) {
 	return changelog
@@ -143,4 +150,15 @@ function formatHtmlChangelog(changelog: string) {
 		.replace(/&\w*?;/g, '') // Remove HTMl special characters
 }
 
-
+function releaseTypeToString(releaseType: number) {
+	switch (releaseType) {
+		case 1:
+			return 'release'
+		case 2:
+			return 'beta'
+		case 3:
+			return 'alpha'
+		default:
+			return 'unknownReleaseType'
+	}
+}

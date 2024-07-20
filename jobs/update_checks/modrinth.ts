@@ -3,6 +3,7 @@ import { modrinth } from '../../external_api/modrinth.js'
 import { notify } from '../notifiers/notifier.js'
 import { logger } from '../../logger.js'
 import 'dotenv/config'
+import { version } from 'pino'
 
 const MAX_BATCH_CALL_SIZE = 1900
 
@@ -36,7 +37,7 @@ export const modrinthUpdateCheck = async () => {
 	// Grab the data from Modrinth
 	const responseData = []
 	for (const batch of batches) {
-		const response = await modrinth.endpoints.getProjects({ projectIds: batch })
+		const response = await modrinth.endpoints.getProjects(batch)
 		responseData.push(response.data)
 	}
 
@@ -50,14 +51,14 @@ export const modrinthUpdateCheck = async () => {
 		}
 
 		// Check if the project's updated field has changed
-		if (data.updated.getTime() !== project.updated.getTime()) {
+		if (data.updated.getTime() !== project.dateUpdated.getTime()) {
 			// Check if the project has files at all
 			if (data.versions.length > 0) {
 				// Check the project's versions to see if the latest file is already there
 				if (!project.versions.includes(data.versions[0].id)) {
 					// TODO success! project has an update -> send the data off to the notification handler
 
-					const versionData = await modrinth.endpoints.listProjectVersions({ projectId: project.id })
+					const versionData = await modrinth.endpoints.listProjectVersions(project.id)
 
 					notifierData.push({
 						projectId: project.id,
@@ -72,32 +73,35 @@ export const modrinthUpdateCheck = async () => {
 
 					notify(notifierData)
 
-					database.project.update({
+					database.project.updateMany({
 						where: {
 							id: project.id,
 							platform: 'Modrinth',
 						},
 						data: {
 							name: data.title,
-							updated: data.updated,
+							dateUpdated: data.updated,
 							versions: {
 								create: {
-									versionId: data.versions[0].id,
-									date: data.versions[0].date,
+									id: data.versions[0].id,
+									datePublished: data.versions[0].date,
 								},
 							},
+						},
+						include: {
+							versions: true,
 						},
 					})
 				}
 			} else {
-				database.project.update({
+				database.project.updateMany({
 					where: {
 						id: project.id,
 						platform: 'Modrinth',
 					},
 					data: {
 						name: data.title,
-						updated: data.updated,
+						dateUpdated: data.updated,
 					},
 				})
 			}

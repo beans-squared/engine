@@ -11,12 +11,13 @@ export const curseforge = {
 		userAgent: `modrunner/${meta.name}/${meta.version} (contact@modrunner.net)`,
 		maxRetries: 3,
 	},
-	async baseFetch<ResponseType>(path: string, options: RequestInit): Promise<ResponseType | null> {
+	async baseFetch<ResponseType>(path: string, options: RequestInit): Promise<unknown | null> {
 		try {
 			const response = await cfetch(
 				`https://${this.config.baseUrl}/${this.config.version}${path}`,
 				{
 					headers: {
+						'Content-Type': 'application/json',
 						'x-api-key': this.config.apiKey,
 						'User-Agent': this.config.userAgent,
 					},
@@ -25,12 +26,13 @@ export const curseforge = {
 				this.config.maxRetries
 			)
 
-			if (response) {
-				return (await response.json()) as ResponseType
+			if (response && response.ok) {
+				return await response.json()
+			} else {
+				logger.warn(`CurseForge data fetch returned status ${response?.status} ${response?.statusText}`)
 			}
 		} catch (error) {
-			logger.error(`Error on CurseForge data fetch at ${options.method ?? ''} ${path}`, error)
-		} finally {
+			logger.error(`Error on CurseForge data fetch at ${options.method ?? ''} ${path}: ${error}`)
 			return null
 		}
 	},
@@ -45,13 +47,13 @@ export const curseforge = {
 		 * Get a single mod.
 		 */
 		async getMod(modId: string): Promise<{ data: Mod } | null> {
-			return await curseforge.baseFetch(`/mods/${modId}`, { method: 'GET' })
+			return (await curseforge.baseFetch(`/mods/${modId}`, { method: 'GET' })) as { data: Mod }
 		},
 		/**
 		 * Get a list of mods.
 		 */
 		async getMods(modIds: string[]): Promise<{ data: Mod[] } | null> {
-			return await curseforge.baseFetch('/mods', { method: 'POST', body: JSON.stringify({ modIds: modIds, filterPcOnly: false }) })
+			return (await curseforge.baseFetch('/mods', { method: 'POST', body: JSON.stringify({ modIds: modIds, filterPcOnly: false }) })) as { data: Mod[] }
 		},
 		/**
 		 * Get the changelog of a file in HTML format.

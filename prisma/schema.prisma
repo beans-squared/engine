@@ -16,17 +16,18 @@ model DiscordChannel {
   textNotificationTemplate String                  @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
   discordGuild             DiscordGuild            @relation(fields: [discordGuildId], references: [id])
   discordGuildId           String
-  projects                 DiscordChannelProject[]
+  trackedProjects          DiscordChannelProject[]
 }
 
 model DiscordChannelProject {
-  id               Int            @id @default(autoincrement())
   project          Project        @relation(references: [id, platform], fields: [projectId, projectPlatform])
   projectId        String
   projectPlatform  String
   discordChannel   DiscordChannel @relation(references: [id], fields: [discordChannelId])
   discordChannelId String
   notifications    Notification[]
+
+  @@id([projectId, projectPlatform, discordChannelId])
 }
 
 model DiscordGuild {
@@ -37,7 +38,7 @@ model DiscordGuild {
   maxChangelogLength       Int              @default(4000)
   maxProjects              Int              @default(1000)
   textNotificationTemplate String           @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
-  DiscordChannel           DiscordChannel[]
+  channels                 DiscordChannel[]
 }
 
 model DiscordUser {
@@ -70,17 +71,19 @@ model Email {
 }
 
 model Notification {
-  id                      Int                    @id @default(autoincrement())
-  datePosted              DateTime               @default(now())
+  id                                   Int                    @id @default(autoincrement())
+  datePosted                           DateTime               @default(now())
   // 0 = Pending, 1 = Success, 2 = Failure
-  status                  Int                    @default(0)
-  message                 String?
-  discordChannelProject   DiscordChannelProject? @relation(references: [id], fields: [discordChannelProjectId])
-  discordChannelProjectId Int?
-  discordUserProject      DiscordUserProject?    @relation(references: [id], fields: [discordUserProjectId])
-  discordUserProjectId    Int?
-  webhookProject          WebhookProject?        @relation(fields: [webhookProjectId], references: [id])
-  webhookProjectId        Int?
+  status                               Int                    @default(0)
+  message                              String?
+  discordChannelProject                DiscordChannelProject? @relation(references: [projectId, projectPlatform, discordChannelId], fields: [discordChannelProjectProjectId, discordChannelProjectProjectPlatform, discordChannelProjectChannelId])
+  discordChannelProjectProjectId       String?
+  discordChannelProjectProjectPlatform String?
+  discordChannelProjectChannelId       String?
+  discordUserProject                   DiscordUserProject?    @relation(references: [id], fields: [discordUserProjectId])
+  discordUserProjectId                 Int?
+  webhookProject                       WebhookProject?        @relation(fields: [webhookProjectId], references: [id])
+  webhookProjectId                     Int?
 }
 
 model Project {

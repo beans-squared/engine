@@ -1,4 +1,5 @@
 import { pino } from 'pino'
+import "dotenv/config"
 
 export const logger = pino({
 	level: process.env.CONFIG_LOGGER_LEVEL ?? 'info',
