@@ -1,11 +1,11 @@
 import express from 'express'
-import { database } from '../database.js'
-import { logger } from '../logger.js'
+import { database } from '../../database.js'
+import { logger } from '../../logger.js'
 
-export const discordGuildRoute = express.Router()
+export const guilds = express.Router()
 
-discordGuildRoute
-	.route('/discord_guild')
+guilds
+	.route('/discord/guilds')
 	.post(async (request, response) => {
 		const created = await database.discordGuild
 			.create({
@@ -42,3 +42,23 @@ discordGuildRoute
 			return response.status(404).end()
 		}
 	})
+
+guilds.route('/projects/guild/:guildId').get(async (request, response) => {
+	// Returns all tracked projects for the provided Discord guild
+	const results = await database.discordChannelProject.findMany({
+		where: {
+			discordChannel: {
+				discordGuildId: request.params.guildId,
+			},
+		},
+		include: {
+			project: true,
+			discordChannel: {
+				include: {
+					discordGuild: true,
+				},
+			},
+		},
+	})
+	return response.status(200).json(results)
+})

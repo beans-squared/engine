@@ -1,25 +1,37 @@
 import { database } from '../../database.js'
+import * as schema from '../../database/schema.js'
 import { curseforge } from '../../external_api/curseforge.js'
 import { notify } from '../notifiers/notifier.js'
 import { logger } from '../../logger.js'
 import { CronJob } from 'cron'
 import 'dotenv/config'
+import { eq, and } from 'drizzle-orm'
 
-const MAX_BATCH_CALL_SIZE = 1000
-
-export default new CronJob('0 * * * * *', async () => {
+export async function curseforgeUpdateCheck(MAX_BATCH_CALL_SIZE: number = 1000) {
 	logger.debug('Checking CurseForge projects for updates...')
 
-	const projects = await database.project.findMany({
-		where: {
-			platform: 'CurseForge',
-		},
-		include: {
-			versions: true,
-		},
-	})
+	// const projects = await database.project.findMany({
+	// 	where: {
+	// 		platform: 'CurseForge',
+	// 	},
+	// 	include: {
+	// 		versions: true,
+	// 	},
+	// })
 
-	if (projects.length <= 0) return logger.debug('Not tracking any CurseForge projects, cancelling update check')
+	const projects = await database
+		.select()
+		.from(schema.project)
+		.where(eq(schema.project.platform, 'CurseForge'))
+		.leftJoin(
+			schema.projectVersion,
+			and(eq(schema.project.id, schema.projectVersion.projectId), eq(schema.project.platform, schema.projectVersion.projectPlatform))
+		)
+
+	if (projects.length <= 0) {
+		logger.debug('Not tracking any CurseForge projects, cancelling update check')
+		return []
+	}
 
 	// Get a list of all game IDs in the database
 	const gameIds: string[] = []
@@ -139,9 +151,9 @@ export default new CronJob('0 * * * * *', async () => {
 			}
 		}
 	}
-	// Send all updated project data off to the notifier
-	notify(notifierData)
-})
+	// Return the data
+	return notifierData
+}
 
 function formatHtmlChangelog(changelog: string) {
 	return changelog

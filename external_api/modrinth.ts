@@ -1,6 +1,6 @@
 import { cfetch } from '../util/cfetch.js'
 import { logger } from '../logger.js'
-import meta from '../package.json'
+import meta from '../package.json' with { type: 'json'}
 import 'dotenv/config'
 
 export const modrinth = {
@@ -34,8 +34,8 @@ export const modrinth = {
 		}
 	},
 	endpoints: {
-		async searchProjects(query: string) {
-			return await modrinth.baseFetch(`/search?${new URLSearchParams({ query })}`, { method: 'GET' })
+		async searchProjects(query: string, limit?: number) {
+			return await modrinth.baseFetch(`/search?${new URLSearchParams({ query })}` + `&limit=${limit ?? 10}`, { method: 'GET' })
 		},
 		async getProject(projectId: string) {
 			return await modrinth.baseFetch(`/project/${projectId}`, { method: 'GET' })

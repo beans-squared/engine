@@ -8,6 +8,8 @@
 		"module": "nodenext",
 		"target": "es2022",
 
+		"outDir": "build",
+
 		"strict": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,

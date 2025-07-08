@@ -49,7 +49,7 @@ model DiscordUser {
   maxChangelogLength       Int                  @default(4000)
   maxProjects              Int                  @default(1000)
   textNotificationTemplate String               @default("# %PROJECT-NAME% has been updated\n**Changelog:**\n```%VERSION-CHANGELOG%```\n**Version Name:** %VERSION-NAME%\n**Version Number:** %VERSION-NUMBER%\n**Release Type:** %VERSION-RELEASE-TYPE%\n**Date Published:** <t:%VERSION-PUBLISH-DATE%:f>")
-  DiscordUserProject       DiscordUserProject[]
+  trackedProjects          DiscordUserProject[]
 }
 
 model DiscordUserProject {

@@ -1,6 +1,6 @@
 import { cfetch } from '../util/cfetch.js'
 import { logger } from '../logger.js'
-import meta from '../package.json'
+import meta from '../package.json' with { type: 'json' }
 import 'dotenv/config'
 
 export const curseforge = {
@@ -11,9 +11,9 @@ export const curseforge = {
 		userAgent: `modrunner/${meta.name}/${meta.version} (contact@modrunner.net)`,
 		maxRetries: 3,
 	},
-	async baseFetch<ResponseType>(path: string, options: RequestInit): Promise<unknown | null> {
+	async baseFetch<ResponseType>(path: string, options: RequestInit): Promise<Response | null | void> {
 		try {
-			const response = await cfetch(
+			return await cfetch(
 				`https://${this.config.baseUrl}/${this.config.version}${path}`,
 				{
 					headers: {
@@ -25,12 +25,6 @@ export const curseforge = {
 				},
 				this.config.maxRetries
 			)
-
-			if (response && response.ok) {
-				return await response.json()
-			} else {
-				logger.warn(`CurseForge data fetch returned status ${response?.status} ${response?.statusText}`)
-			}
 		} catch (error) {
 			logger.error(`Error on CurseForge data fetch at ${options.method ?? ''} ${path}: ${error}`)
 			return null
@@ -40,31 +34,40 @@ export const curseforge = {
 		/**
 		 * Get all mods that match the search criteria.
 		 */
-		async searchMods(gameId: number, searchFilter: string): Promise<{ data: Mod[] } | null> {
+		async searchMods(gameId: number, searchFilter: string) {
 			return await curseforge.baseFetch(`/mods/search?${new URLSearchParams(`gameId=${gameId.toString()}&searchFilter=${searchFilter}`)}`, { method: 'GET' })
 		},
 		/**
 		 * Get a single mod.
 		 */
-		async getMod(modId: string): Promise<{ data: Mod } | null> {
-			return (await curseforge.baseFetch(`/mods/${modId}`, { method: 'GET' })) as { data: Mod }
+		async getMod(modId: string): Promise<{ data: Mod } | null | undefined> {
+			const response = await curseforge.baseFetch(`/mods/${modId}`, { method: 'GET' })
+			if (response) {
+				if (response.status >= 200 && response.status < 300) {
+					return await response.json() as { data: Mod }
+				} else if (response.status === 404) {
+					return null
+				}
+			} else {
+				throw new Error('Failed to fetch mod from CurseForge')
+			}
 		},
 		/**
 		 * Get a list of mods.
 		 */
-		async getMods(modIds: string[]): Promise<{ data: Mod[] } | null> {
+		async getMods(modIds: string[]) {
 			return (await curseforge.baseFetch('/mods', { method: 'POST', body: JSON.stringify({ modIds: modIds, filterPcOnly: false }) })) as { data: Mod[] }
 		},
 		/**
 		 * Get the changelog of a file in HTML format.
 		 */
-		async getModFileChangelog(modId: string, fileId: string): Promise<{ data: string } | null> {
+		async getModFileChangelog(modId: string, fileId: string) {
 			return await curseforge.baseFetch(`/mods/${modId}/files/${fileId}/changelog`, { method: 'GET' })
 		},
 		/**
 		 * Get a download url for a specific file.
 		 */
-		async getModFileDownloadUrl(modId: string, fileId: string): Promise<{ data: string } | null> {
+		async getModFileDownloadUrl(modId: string, fileId: string) {
 			return await curseforge.baseFetch(`/mods/${modId}/files/${fileId}/download-url`, { method: 'GET' })
 		},
 	},

@@ -4,24 +4,23 @@ import { logger } from './logger.js'
 import 'dotenv/config.js'
 
 import heartbeat from './jobs/heartbeat.js'
-import curseforge from './jobs/update_checks/curseforge.js'
 
-import { discordChannelRoute } from './routes/discordChannel.js'
-import { discordGuildRoute } from './routes/discordGuild.js'
-import { project } from './routes/project.js'
+import { channels } from './routes/discord/channels.js'
+import { guilds } from './routes/discord/guilds.js'
+import { projects } from './routes/projects.js'
 
 const app = express()
 app.use(express.json())
 
 // Routes
-app.use(discordChannelRoute)
-app.use(discordGuildRoute)
-app.use(project)
+app.use(channels)
+app.use(guilds)
+app.use(projects)
 
 app.use('/', (request, response) => {
 	return response.send({
 		about: 'Welcome Traveler!',
-		docs: '',
+		docs: 'https://modrunner.net/docs',
 		name: 'modrunner-api',
 		version: meta.version,
 	})
@@ -30,7 +29,7 @@ app.use('/', (request, response) => {
 // Jobs
 heartbeat.start()
 
-curseforge.start()
+// curseforge.start()
 
 // Start server
 app.listen(process.env.CONFIG_SERVER_PORT, () => {

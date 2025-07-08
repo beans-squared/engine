@@ -1,4 +1,3 @@
-import { P, destination, version } from 'pino'
 import { database } from '../../database.js'
 import { logger } from '../../logger.js'
 
@@ -26,7 +25,11 @@ export const notify = async (notifierProjects: NotifierProject[] = []) => {
 					},
 				},
 				where: {
-					id: discordChannelProject.id,
+					projectId_projectPlatform_discordChannelId: {
+						projectId: null,
+						projectPlatform: null,
+						discordChannelId: discordChannelProject.
+					},
 				},
 			})
 

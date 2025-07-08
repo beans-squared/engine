@@ -1,10 +1,10 @@
 import express from 'express'
-import { database } from '../database.js'
-import { logger } from '../logger.js'
+import { database } from '../../database.js'
+import { logger } from '../../logger.js'
 
-export const discordChannelRoute = express.Router()
+export const channels = express.Router()
 
-discordChannelRoute.route('/discord_channel').delete(async (request, response) => {
+channels.route('/discord/channels').delete(async (request, response) => {
 	const deleted = await database.discordChannel
 		.delete({
 			where: {
